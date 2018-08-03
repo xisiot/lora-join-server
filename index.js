@@ -2,15 +2,13 @@
 
 const config = require('./config');
 const loraLib = require('./lib/lora-lib');
-const {ERROR, Log, Models, MQClient} = loraLib;
+const {ERROR, Log, Models, MQClient, dbClient} = loraLib;
 
 const JoinHandler = require('./lib/joinHandler');
 const bluebird = require('bluebird');
 const util = require('util');
 
-let dbClient = require('./lib/dbClient');
-
-dbClient = {
+const db = {
   MySQLClient: dbClient.createSequelizeClient(config.database.mysql),
 };
 
@@ -20,7 +18,7 @@ const modelIns = {
 };
 
 for (let model in Models.MySQLModels) {
-  modelIns.MySQLModel[model] = new Models.MySQLModels[model](dbClient.MySQLClient);
+  modelIns.MySQLModel[model] = new Models.MySQLModels[model](db.MySQLClient);
 }
 
 const log = new Log(config.log);
