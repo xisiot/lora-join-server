@@ -24,7 +24,7 @@
     "level": "debug",
     "colorize": true
   },
-  "mqClient": {
+  "mqClient_js": {
     "consumerGroup": {
       "options": {
         "kafkaHost": "kafkaHost:port",

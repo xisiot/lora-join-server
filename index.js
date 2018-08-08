@@ -22,7 +22,7 @@ for (let model in Models.MySQLModels) {
 }
 
 const log = new Log(config.log);
-const mqClient = new MQClient(config.mqClient, log);
+const mqClient = new MQClient(config.mqClient_js, log);
 const joinHandler = new JoinHandler(modelIns, config, log);
 const handleMessage = () => {
   mqClient.message((message) => {
@@ -32,7 +32,7 @@ const handleMessage = () => {
       monitor.addMonitorVarCount('validJoinReq', 1);
       monitor.addMonitorVarCount('joinRes', 1);
       message.value.rxpk.data = acptPHYPayload;
-      return mqClient.publish(config.mqClient.producer.joinServerTopic, message.value);
+      return mqClient.publish(config.mqClient_js.producer.joinServerTopic, message.value);
     })
     .catch((error) => {
       log.error(error.stack);
@@ -53,7 +53,7 @@ const handleMessage = () => {
 };
 
 const logBasicMessage = () => {
-  log.info(`LoRa join server starts to listen topic: ${config.mqClient.consumerGroup.topics}`);
+  log.info(`LoRa join server starts to listen topic: ${config.mqClient_js.consumerGroup.topics}`);
   return bluebird.resolve();
 };
 
