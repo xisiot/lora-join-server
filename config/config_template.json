@@ -18,7 +18,8 @@
     }
   },
   "mocha": {
-    "timeout": 5000
+    "timeout": 5000,
+    "longTimeOut": 15000
   },
   "log": {
     "level": "debug",
@@ -27,25 +28,27 @@
   "mqClient_js": {
     "consumerGroup": {
       "options": {
-        "kafkaHost": "kafkaHost:port",
+        "kafkaHost": "localhost:9092",
         "groupId": "lora-join-server-consumer",
         "sessionTimeout": 15000,
-        "protocol": ["roundrobin"],
+        "protocol": [
+          "roundrobin"
+        ],
         "fromOffset": "latest"
       },
       "topics": [
-        "topicA"
+        "JS-sub"
       ]
     },
     "client": {
-      "kafkaHost": "kafkaHost:port",
-      "clientId": "lora-join-server-producer"
+      "kafkaHost": "localhost:9092",
+      "clientId": "lora-join-server-produce"
     },
     "producer": {
       "requireAcks": 1,
       "ackTimeoutMs": 100,
       "partitionerType": 2,
-      "joinServerTopic": "topicB"
+      "joinServerTopic": "JS-pu"
     }
   }
 }
