@@ -48,7 +48,7 @@
       "requireAcks": 1,
       "ackTimeoutMs": 100,
       "partitionerType": 2,
-      "joinServerTopic": "JS-pu"
+      "joinServerTopic": "JS-pub"
     }
   }
 }
