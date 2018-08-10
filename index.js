@@ -29,14 +29,11 @@ const handleMessage = () => {
     const data = message.value.rxpk.data;
     joinHandler.handler(message.value.rxpk)
     .then((acptPHYPayload) => {
-      monitor.addMonitorVarCount('validJoinReq', 1);
-      monitor.addMonitorVarCount('joinRes', 1);
       message.value.rxpk.data = acptPHYPayload;
       return mqClient.publish(config.mqClient_js.producer.joinServerTopic, message.value);
     })
     .catch((error) => {
       log.error(error.stack);
-      monitor.addMonitorVarCount('invalidJoinReq', 1);
       if (error instanceof ERROR.MICDismatchError) {
         log.error(error.message);
       } else if (error instanceof ERROR.DeviceNotExistError) {
