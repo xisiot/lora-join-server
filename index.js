@@ -23,9 +23,9 @@ for (let model in Models.MySQLModels) {
 
 const log = new Log(config.log);
 const mqClient = new MQClient(config.mqClient_js, log);
-const joinHandler = new JoinHandler(modelIns, config, log);
 const handleMessage = () => {
   mqClient.message((message) => {
+    const joinHandler = new JoinHandler(modelIns, config, log);
     const data = message.value.rxpk.data;
     joinHandler.handler(message.value.rxpk)
     .then((acptPHYPayload) => {
