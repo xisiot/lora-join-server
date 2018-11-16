@@ -34,7 +34,7 @@ const handleMessage = () => {
     })
     .catch((error) => {
       log.error(error.stack);
-      if (error instanceof ERROR.MICDismatchError) {
+      if (error instanceof ERROR.MICMismatchError) {
         log.error(error.message);
       } else if (error instanceof ERROR.DeviceNotExistError) {
         log.error(error.message);
