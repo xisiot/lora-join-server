@@ -37,18 +37,18 @@ const JoinHandler = require(join('lib/joinHandler'));
 const didReg = new RegExp(/^D[0-9a-fA-F]{21}$/);
 
 const appInfo = {
-  AppEUI: Buffer.alloc(consts.APPEUI_LEN),
+  JoinEUI: Buffer.alloc(consts.JOINEUI_LEN),
   userID: 'testUser',
   name: 'test',
 };
 
 const appQuery = {
-  AppEUI: appInfo.AppEUI,
+  JoinEUI: appInfo.JoinEUI,
 };
 
 const deviceInfo = {
   DevEUI: crypto.randomBytes(consts.DEVEUI_LEN),
-  AppEUI: appInfo.AppEUI,
+  JoinEUI: appInfo.JoinEUI,
 };
 
 const deviceQuery = {
@@ -56,7 +56,8 @@ const deviceQuery = {
 };
 
 const testJoinReq = {
-  AppEUI: appInfo.AppEUI,
+  RejoinType: Buffer.from('00','hex'),
+  JoinEUI: appInfo.JoinEUI,
   DevEUI: deviceInfo.DevEUI,
   NwkID: Buffer.alloc(consts.NWKID_LEN),
   NetID: Buffer.alloc(consts.NETID_LEN),
@@ -65,21 +66,22 @@ const testJoinReq = {
 
 const mhdr = Buffer.alloc(consts.MHDR_LEN); // All zero
 const AppKey = crypto.randomBytes(consts.APPKEY_LEN);
+const NwkKey = crypto.randomBytes(consts.NWKKEY_LEN);
 
-const testJoinReqPHYPayload = {
-  MACPayload: testJoinReq,
-  MHDR: mhdr,
-  MIC: JoinHandler.joinMICCalculator({
-    MHDR: mhdr,
-    AppEUI: testJoinReq.AppEUI,
-    DevEUI: testJoinReq.DevEUI,
-    DevNonce: testJoinReq.DevNonce,
-  }, AppKey, 'request'),
-};
+// const testJoinReqPHYPayload = {
+//   MACPayload: testJoinReq,
+//   MHDR: mhdr,
+//   MIC: JoinHandler.joinMICCalculator({
+//     MHDR: mhdr,
+//     JoinEUI: testJoinReq.JoinEUI,
+//     DevEUI: testJoinReq.DevEUI,
+//     DevNonce: testJoinReq.DevNonce,
+//   }, AppKey, 'request'),
+// };
 
 const devRegOpts = {
   mac: buf2str(testJoinReq.DevEUI, 1),
-  product_key: buf2str(testJoinReq.AppEUI),
+  product_key: buf2str(testJoinReq.JoinEUI),
   passcode: buf2str(testJoinReq.DevNonce, 1),
 };
 
@@ -117,14 +119,15 @@ describe('Test join', () => {
   let DLSettings;
   let RxDelay;
 
-  const AppNonce = crypto.randomBytes(consts.APPNONCE_LEN);
+  const JoinNonce = crypto.randomBytes(consts.JOINNONCE_LEN);
   deviceInfo.AppKey = AppKey;
+  deviceInfo.NwkKey = NwkKey;
   before('Get connection with MySQL', (done) => {
     testJoinHdl = new JoinHandler(modelIns, config, logger);
     DLSettings = DLSettingsPackager(4, 0);
     RxDelay = Buffer.alloc(1);
     RxDelay = RxDelayPackager(RxDelay, 1);
-    DevAddr = JoinHandler.genDevAddr(testJoinReq.AppEUI,
+    DevAddr = JoinHandler.genDevAddr(appInfo.JoinEUI,
       testJoinReq.DevEUI,
       testJoinReq.NwkID
     );
@@ -152,13 +155,19 @@ describe('Test join', () => {
   describe('Test generation of session keys', () => {
     let nonce = {
       DevNonce: testJoinReq.DevNonce,
-      AppNonce: AppNonce,
-      NetID: testJoinReq.NetID,
+      JoinNonce: JoinNonce,
+      JoinEUI:appInfo.JoinEUI,
+      DevEUI:testJoinReq.DevEUI,
     };
-    it('Generate NwkSKey', () => {
-      let sKey = JoinHandler.genSKey(AppKey, nonce);
-      expect(Buffer.isBuffer(sKey)).to.be.true;
-      expect(sKey.length).to.equal(consts.APPKEY_LEN);
+    it('Generate Session Key', () => {
+      let AppSKey = JoinHandler.genSKey(AppKey, nonce,'APP');
+      let JSIntKey = JoinHandler.genSKey(NwkKey, nonce,'JSINT');
+      let SNwkSIntKey = JoinHandler.genSKey(NwkKey, nonce, 'SNWKSINT');
+      console.log(AppSKey);
+      console.log(JSIntKey);
+      console.log(SNwkSIntKey);
+      expect(Buffer.isBuffer(SNwkSIntKey)).to.be.true;
+      expect(SNwkSIntKey.length).to.equal(consts.SNWKSINTKEY_LEN);
     });
   });
 
@@ -166,7 +175,7 @@ describe('Test join', () => {
     let joinAcpt;
     before('Generate join accept message', () => {
       testJoinHdl.DevAddr = DevAddr;
-      testJoinHdl.AppNonce = AppNonce;
+      testJoinHdl.JoinNonce = JoinNonce;
       testJoinHdl.AppKey = AppKey;
       joinAcpt = testJoinHdl.genAcpt(testJoinReq, DLSettings, RxDelay);
     });
@@ -179,17 +188,17 @@ describe('Test join', () => {
   describe('Test handler', () => {
     it('handler expect to return join accept params', (done) => {
       const testMHDR = Buffer.from('00', 'hex');
-      const testMACPayload = Buffer.concat([
-        reverse(testJoinReq.AppEUI),
-        reverse(testJoinReq.DevEUI),
-        reverse(testJoinReq.DevNonce),
-      ]);
-      const testMIC = Buffer.from(testJoinReqPHYPayload.MIC);
+      const testMACPayload = {
+        JoinEUI:testJoinReq.JoinEUI,
+        DevEUI:testJoinReq.DevEUI,
+        DevNonce:testJoinReq.DevNonce,
+      };
+      //const testMIC = Buffer.from(testJoinReqPHYPayload.MIC);
       let testJoinReqPHY = {
         MHDRRaw: testMHDR,
         MHDR: testMHDR,
         MACPayload: testMACPayload,
-        MIC: testMIC,
+        // MIC: testMIC
       };
       testJoinReqPHY = {
         data: testJoinReqPHY,
